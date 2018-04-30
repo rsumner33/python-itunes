@@ -81,7 +81,6 @@ class _Request(object):
         url += data
 
         request = urllib2.Request(url)
-        request.add_header('foo', 'bar')
         response = urllib2.urlopen(request)
         return response.read()
 
