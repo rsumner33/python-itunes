@@ -85,3 +85,7 @@ def test_movie_as_track():
     item = itunes.search(query='the godfather', media='movie')[0]
     assert_equal(item.get_artist(), None)
 
+<<>>>>>>>+master
+=====
+
+>>>>>>> e91280e
