@@ -4,10 +4,9 @@ import os
 import urllib2, urllib
 import urlparse
 import re
-import datetime
-try:
+try: 
     import simplejson as json
-except ImportError:
+except ImportError: 
     import json
 try:
     from hashlib import md5
@@ -25,7 +24,6 @@ __status__ = 'Beta'
 
 API_VERSION = '2'        # iTunes API version
 COUNTRY = 'US'           # ISO Country Store
-
 HOST_NAME = 'http://itunes.apple.com/'
 
 __cache_enabled = False  # Enable cache? if set to True, make sure that __cache_dir exists! (e.g. $ mkdir ./cache)
@@ -35,18 +33,18 @@ __cache_dir = './cache'  # Set cache directory
 
 def clean_json(data):
    return data.replace('\\\\', r'//').replace(r"\'", '\"').replace(r'\"', '').replace(r'\u','')
-
+ 
 
 class ServiceException(Exception):
     """Exception related to the web service."""
-
+    
     def __init__(self, type, message):
         self._type = type
         self._message = message
-
+    
     def __str__(self):
         return self._type + ': ' + self._message
-
+    
     def get_message(self):
         return self._message
 
@@ -79,10 +77,11 @@ class _Request(object):
             url = "http://" + url
         url += self.method + '?'
         url += data
+        #print url
 
         request = urllib2.Request(url)
         response = urllib2.urlopen(request)
-        return response.read()
+        return response.read() 
 
     def execute(self, cacheable=False):
         try:
@@ -96,7 +95,7 @@ class _Request(object):
             raise self._get_error(e.fp.read())
 
     def _get_cache_key(self):
-        """Cache key"""
+        """Cache key""" 
         keys = self.params.keys()[:]
         keys.sort()
         string = self.method
@@ -127,18 +126,18 @@ class _Request(object):
 # Webservice BASE OBJECT
 class _BaseObject(object):
     """An abstract webservices object."""
-
+        
     def __init__(self, method):
         self._method = method
         self._search_terms = dict()
-
+    
     def _request(self, method_name=None, params = None, cacheable = False):
         if not method_name:
             method_name = self._method
         if not params:
-            params = self._get_params()
+            params = self._get_params()    
         return _Request(method_name, params).execute(cacheable)
-
+    
     def _get_params(self):
         params = {}
         for key in self._search_terms.keys():
@@ -223,24 +222,20 @@ class Search(_BaseObject):
     def num_results(self):
         return self._num_results
 
-
 # LOOKUP
 class Lookup(_BaseObject):
-    """ Loookup """
+    """ Lookup """
 
-    def __init__(self, id, entity=None, country=None, limit=500):
+    def __init__(self, id, entity=None, limit=50):
         _BaseObject.__init__(self, 'lookup')
-
         self.id = id
         self._search_terms['id'] = id
         if entity:
-            self._search_terms['entity'] = entity  # The type of results you want returned, relative to the specified media type
-        if country:
-            self._search_terms['country'] = country  # Retrieve localized version of item data
-        self._search_terms['limit'] = limit  # Results limit
+            self._search_terms['entity'] = entity# The type of results you want returned, relative to the specified media type
+        self._search_terms['limit'] = limit      # Results limit
 
 
-# RESULT ITEM
+# RESULT ITEM 
 class Item(object):
     """ Item result class """
 
@@ -277,16 +272,14 @@ class Item(object):
 
     def _set_artwork(self, json):
         self.artwork = dict()
-        if json.has_key('artworkUrl30'):
+        if json.has_key('artworkUrl30'): 
             self.artwork['30'] = json['artworkUrl30']
-        if json.has_key('artworkUrl60'):
+        if json.has_key('artworkUrl60'): 
             self.artwork['60'] = json['artworkUrl60']
-        if json.has_key('artworkUrl100'):
+        if json.has_key('artworkUrl100'): 
             self.artwork['100'] = json['artworkUrl100']
-        if json.has_key('artworkUrl512'):
+        if json.has_key('artworkUrl512'): 
             self.artwork['512'] = json['artworkUrl512']
-        if json.has_key('artworkUrl1100'):
-            self.artwork['1100'] = json['artworkUrl1100']
 
     def _set_url(self, json):
         self.url = None
@@ -307,13 +300,9 @@ class Item(object):
         return self.name.encode('utf8')
 
     def __eq__(self, other):
-        if other == None:
-            return False
         return self.id == other.id
 
     def __ne__(self, other):
-        if other == None:
-            return False
         return self.id != other.id
 
     def _set_name(self, name):
@@ -332,10 +321,6 @@ class Item(object):
         """ Returns the Item's name """
         return self.__repr__()
 
-    def get_type(self):
-        """ Returns the type of the Item """
-        return self.type
-
     def get_url(self):
         """ Returns the iTunes Store URL of the Item """
         return self.url
@@ -352,10 +337,6 @@ class Item(object):
         """ Returns the artwork (a dict) of the item """
         return self.artwork
 
-    def get_songs(self, limit=500):
-        """ Just an alias for get_tracks """
-        return self.get_tracks(limit)
-
     def get_tracks(self, limit=500):
         """ Returns the tracks of the Item """
         if self.type == 'song':
@@ -365,16 +346,7 @@ class Item(object):
             raise ServiceException(type='Error', message='Nothing found!')
         return items[1:]
 
-    def get_music_videos(self, limit=500):
-        """ Returns the tracks of the Item """
-        if self.type == 'musicVideo':
-            return self
-        items = Lookup(id=self.id, entity='musicVideo', limit=limit).get()
-        if not items:
-            raise ServiceException(type='Error', message='Nothing found!')
-        return items[1:]
-
-    def get_albums(self, limit=500):
+    def get_albums(self, limit=200):
         """ Returns the albums of the Item """
         if self.type == 'collection':
             return self
@@ -423,7 +395,7 @@ class Album(Item):
         self.url = json.get('collectionViewUrl', None)
         self.amg_id = json.get('amgAlbumId', None)
 
-        self.price = round(json.get('collectionPrice', 0) or 0, 4)
+        self.price = round(json['collectionPrice'] or 0, 4)
         self.price_currency = json['currency']
         self.track_count = json['trackCount']
         self.copyright = json.get('copyright', None)
@@ -534,30 +506,6 @@ class Software(Track):
         self._set_avg_rating(json)
         self._set_num_ratings(json)
 
-        self._set_file_size_bytes(json)
-        self._set_current_version_release_date(json)
-        self._set_bundle_id(json)
-        self._set_release_notes(json)
-        self._set_primary_genre_id(json)
-
-
-    def _set_file_size_bytes(self, json):
-        self.file_size_bytes = json.get('fileSizeBytes', 0)
-
-    def _set_current_version_release_date(self, json):
-        self.current_version_release_date = None
-        if json.has_key('currentVersionReleaseDate') and json['currentVersionReleaseDate']:
-            self.current_version_release_date = datetime.datetime.strptime( json['currentVersionReleaseDate'], r'%Y-%m-%dT%H:%M:%SZ' )
-
-    def _set_bundle_id(self, json):
-        self.bundle_id = json.get('bundleId', None)
-
-    def _set_release_notes(self, json):
-        self.release_notes = json.get('releaseNotes', None)
-
-    def _set_primary_genre_id(self, json):
-        self.primary_genre_id = json.get('primaryGenreId', 0)
-
     def _set_version(self, json):
         self.version = json.get('version', None)
 
@@ -648,16 +596,8 @@ def get_md5(text):
     return hash.hexdigest()
 
 #SEARCHES
-def search_song(query, limit=100, offset=0, order=None, store=COUNTRY):
-    """ Just an alias for search_track """
-    return search_track(query, limit, offset, order, store)
-
 def search_track(query, limit=100, offset=0, order=None, store=COUNTRY):
     return Search(query=query, media='music', entity='song',
-                  offset=offset, limit=limit, order=order, country=store).get()
-
-def search_music_video(query, limit=100, offset=0, order=None, store=COUNTRY):
-    return Search(query=query, media='music', entity='musicVideo',
                   offset=offset, limit=limit, order=order, country=store).get()
 
 def search_album(query, limit=100, offset=0, order=None, store=COUNTRY):
@@ -676,10 +616,9 @@ def search(query, media='all', limit=100, offset=0, order=None, store=COUNTRY):
     return Search(query=query, media=media, limit=limit,
                   offset=offset, order=order, country=store).get()
 
-
-# LOOKUP
-def lookup(id, entity=None, country=None, limit=500):
-    items = Lookup(id, entity=entity, country=country, limit=limit).get()
+#LOOKUP
+def lookup(id):
+    items = Lookup(id).get()
     if not items:
         raise ServiceException(type='Error', message='Nothing found!')
     return items[0]
